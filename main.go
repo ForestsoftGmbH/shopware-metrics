@@ -73,7 +73,7 @@ func run(config database.DbConfig, ctx context.Context, metrics []metrics.Shopwa
 		select {
 		case <-ctx.Done():
 			return nil
-		case <-time.Tick(time.Duration(10) * time.Second):
+		case <-time.Tick(time.Duration(30) * time.Second):
 			db, err := database.NewConnection(config)
 			if err != nil {
 				log.Fatal("Could not connect to database: ", err)
