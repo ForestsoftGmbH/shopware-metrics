@@ -38,9 +38,6 @@ func main() {
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
 
-	orderCounter := metrics.NewOrderCount()
-	reg.MustRegister(orderCounter.Counter)
-
 	log.Printf("Starting Server at %s/metrics", *addr)
 	// Expose /metrics HTTP endpoint using the created custom registry.
 	http.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{Registry: reg}))
@@ -55,8 +52,16 @@ func main() {
 
 	//make a new slice of metrics
 	metrics := []metrics.ShopwareMetrics{
-		orderCounter,
+		metrics.NewOrderCount(),
+		metrics.NewCustomerCounter(),
+		metrics.NewOrderRevenue(),
+		metrics.NewNewsletterCounter(),
 	}
+	//iterate metrics and register in registry
+	for _, metric := range metrics {
+		reg.MustRegister(metric.GetGauge())
+	}
+
 	if err := run(config, ctx, metrics); err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
 		os.Exit(1)

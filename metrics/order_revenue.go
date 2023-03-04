@@ -6,27 +6,27 @@ import (
 	"log"
 )
 
-type OrderCount struct {
+type RevenueGauge struct {
 	Counter *prometheus.GaugeVec
 }
 
-func NewOrderCount() OrderCount {
+func NewOrderRevenue() RevenueGauge {
 	orderCountMetrics := prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "shopware_order_count",
+			Name: "shopware_order_revenue_net",
 			Help: "Number of orders",
 		},
 		[]string{"sales_channel"},
 	)
-	orderCount := OrderCount{
+	orderCount := RevenueGauge{
 		Counter: orderCountMetrics,
 	}
 	return orderCount
 }
-func (o OrderCount) GetGauge() *prometheus.GaugeVec {
+func (o RevenueGauge) GetGauge() *prometheus.GaugeVec {
 	return o.Counter
 }
-func (o OrderCount) Grab(db *sql.DB) (*prometheus.GaugeVec, error) {
+func (o RevenueGauge) Grab(db *sql.DB) (*prometheus.GaugeVec, error) {
 	var salesChannel string
 	var channelId string
 	var orderCountMetrics = o.Counter

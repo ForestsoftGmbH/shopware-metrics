@@ -6,27 +6,27 @@ import (
 	"log"
 )
 
-type OrderCount struct {
+type CustomerGauge struct {
 	Counter *prometheus.GaugeVec
 }
 
-func NewOrderCount() OrderCount {
+func NewCustomerCounter() CustomerGauge {
 	orderCountMetrics := prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "shopware_order_count",
-			Help: "Number of orders",
+			Name: "shopware_customer_count",
+			Help: "Number of customers",
 		},
 		[]string{"sales_channel"},
 	)
-	orderCount := OrderCount{
+	orderCount := CustomerGauge{
 		Counter: orderCountMetrics,
 	}
 	return orderCount
 }
-func (o OrderCount) GetGauge() *prometheus.GaugeVec {
+func (o CustomerGauge) GetGauge() *prometheus.GaugeVec {
 	return o.Counter
 }
-func (o OrderCount) Grab(db *sql.DB) (*prometheus.GaugeVec, error) {
+func (o CustomerGauge) Grab(db *sql.DB) (*prometheus.GaugeVec, error) {
 	var salesChannel string
 	var channelId string
 	var orderCountMetrics = o.Counter
@@ -39,7 +39,7 @@ func (o OrderCount) Grab(db *sql.DB) (*prometheus.GaugeVec, error) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		sql := "SELECT COUNT(*) FROM `order` WHERE sales_channel_id = ?"
+		sql := "SELECT COUNT(*) FROM `customer` WHERE sales_channel_id = ?"
 		err2 := db.QueryRow(sql, channelId).Scan(&orderCount)
 		if err2 != nil {
 			log.Println("Error", err2, sql)

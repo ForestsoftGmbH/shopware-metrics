@@ -5,10 +5,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-type OrderCount struct {
-	Counter *prometheus.GaugeVec
-}
-
 type ShopwareMetrics interface {
+	GetGauge() *prometheus.GaugeVec
 	Grab(db *sql.DB) (*prometheus.GaugeVec, error)
 }
