@@ -6,14 +6,9 @@ import (
 	"shopware-metrics/database"
 )
 
-type OrderCount struct {
-	Counter  *prometheus.CounterVec
-	dbconfig database.DbConfig
-}
-
 func NewOrderCount(dp database.DbConfig) OrderCount {
-	orderCountMetrics := prometheus.NewCounterVec(
-		prometheus.CounterOpts{
+	orderCountMetrics := prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
 			Name: "shopware_order_count",
 			Help: "Number of orders",
 		},
@@ -27,7 +22,7 @@ func NewOrderCount(dp database.DbConfig) OrderCount {
 	return orderCount
 }
 
-func (o OrderCount) Grab() (*prometheus.CounterVec, error) {
+func (o OrderCount) Grab() (*prometheus.GaugeVec, error) {
 	db, err := database.NewConnection(o.dbconfig)
 	var salesChannel string
 	var channelId string
@@ -42,12 +37,15 @@ func (o OrderCount) Grab() (*prometheus.CounterVec, error) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		err2 := db.QueryRow("SELECT COUNT(*) FROM `order` WHERE sales_channel_id = ?", channelId).Scan(&orderCount)
+		sql := "SELECT COUNT(*) FROM `order` WHERE sales_channel_id = ?"
+		err2 := db.QueryRow(sql, channelId).Scan(&orderCount)
 		if err2 != nil {
-			log.Fatal(err2)
+			log.Println("Error", err2, sql)
+			log.Println("Sales Channel:", channelId)
+			log.Println("Sales Channel Name:", salesChannel)
+		} else {
+			orderCountMetrics.WithLabelValues(salesChannel).Set(float64(orderCount))
 		}
-
-		orderCountMetrics.WithLabelValues(salesChannel).Add(float64(orderCount))
 	}
 	return orderCountMetrics, err
 }
