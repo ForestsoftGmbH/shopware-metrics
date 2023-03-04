@@ -1,15 +1,14 @@
 package metrics
 
 import (
+	"database/sql"
 	"github.com/prometheus/client_golang/prometheus"
-	"shopware-metrics/database"
 )
 
 type OrderCount struct {
-	Counter  *prometheus.GaugeVec
-	dbconfig database.DbConfig
+	Counter *prometheus.GaugeVec
 }
 
 type ShopwareMetrics interface {
-	Grab() (*prometheus.GaugeVec, error)
+	Grab(db *sql.DB) (*prometheus.GaugeVec, error)
 }

@@ -1,12 +1,12 @@
 package metrics
 
 import (
+	"database/sql"
 	"github.com/prometheus/client_golang/prometheus"
 	"log"
-	"shopware-metrics/database"
 )
 
-func NewOrderCount(dp database.DbConfig) OrderCount {
+func NewOrderCount() OrderCount {
 	orderCountMetrics := prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "shopware_order_count",
@@ -14,22 +14,18 @@ func NewOrderCount(dp database.DbConfig) OrderCount {
 		},
 		[]string{"sales_channel"},
 	)
-
 	orderCount := OrderCount{
-		Counter:  orderCountMetrics,
-		dbconfig: dp,
+		Counter: orderCountMetrics,
 	}
 	return orderCount
 }
 
-func (o OrderCount) Grab() (*prometheus.GaugeVec, error) {
-	db, err := database.NewConnection(o.dbconfig)
+func (o OrderCount) Grab(db *sql.DB) (*prometheus.GaugeVec, error) {
 	var salesChannel string
 	var channelId string
 	var orderCountMetrics = o.Counter
 	res, err := db.Query("SELECT sales_channel.id, sales_channel_translation.name FROM sales_channel INNER JOIN sales_channel_translation ON sales_channel.id = sales_channel_translation.sales_channel_id")
 	defer res.Close()
-	defer db.Close()
 	var orderCount int
 
 	for res.Next() {

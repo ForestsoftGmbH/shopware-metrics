@@ -38,13 +38,8 @@ func main() {
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
 
-	orderCounter := metrics.NewOrderCount(config)
-	orderCountMetrics, err := orderCounter.Grab()
-	if err != nil {
-		fmt.Println(err)
-	} else {
-		reg.MustRegister(orderCountMetrics)
-	}
+	orderCounter := metrics.NewOrderCount()
+	reg.MustRegister(orderCounter.Counter)
 
 	log.Printf("Starting Server at %s/metrics", *addr)
 	// Expose /metrics HTTP endpoint using the created custom registry.
@@ -62,25 +57,29 @@ func main() {
 	metrics := []metrics.ShopwareMetrics{
 		orderCounter,
 	}
-	if err := run(ctx, metrics); err != nil {
+	if err := run(config, ctx, metrics); err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
 		os.Exit(1)
 	}
 
 }
-func run(ctx context.Context, metrics []metrics.ShopwareMetrics) error {
+func run(config database.DbConfig, ctx context.Context, metrics []metrics.ShopwareMetrics) error {
 	for {
 		select {
 		case <-ctx.Done():
 			return nil
 		case <-time.Tick(time.Duration(10) * time.Second):
+			db, err := database.NewConnection(config)
+			if err != nil {
+				log.Fatal("Could not connect to database: ", err)
+			}
 			for _, metric := range metrics {
-				log.Println("Grabbing metrics for %v", metric)
-				_, err := metric.Grab()
+				_, err := metric.Grab(db)
 				if err != nil {
 					log.Println("Error: ", err)
 				}
 			}
+			db.Close()
 		}
 	}
 	return nil
