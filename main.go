@@ -1,18 +1,16 @@
 package main
 
 import (
-	"database/sql"
 	"flag"
 	"fmt"
-	"log"
-	"net/http"
-	"shopware-metrics/metrics"
-	"time"
-
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"k8s.io/utils/env"
+	"log"
+	"net/http"
+	"shopware-metrics/database"
+	"shopware-metrics/metrics"
 )
 
 var addr = flag.String("listen-address", "0.0.0.0:8090", "The address to listen on for HTTP requests.")
@@ -27,22 +25,19 @@ func main() {
 
 	// Create non-global registry.
 	reg := prometheus.NewRegistry()
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:3306)/%s", *user, *password, *host, *dbname)
-	db, err := sql.Open("mysql", dsn)
-	if err != nil {
-		panic(err)
+	config := database.DbConfig{
+		User:     *user,
+		Password: *password,
+		Host:     *host,
+		Dbname:   *dbname,
 	}
-	// See "Important settings" section.
-	db.SetConnMaxLifetime(time.Minute * 3)
-	db.SetMaxOpenConns(10)
-	db.SetMaxIdleConns(10)
-
-	orderCountMetrics, err := metrics.NewOrderCount(*db)
+	orderCounter := metrics.NewOrderCount(config)
+	orderCountMetrics, err := orderCounter.Grab()
 	if err != nil {
-		log.Println(err)
+		fmt.Println(err)
+	} else {
+		reg.MustRegister(orderCountMetrics)
 	}
-
-	reg.MustRegister(orderCountMetrics)
 
 	log.Printf("Starting Server at %s/metrics", *addr)
 	// Expose /metrics HTTP endpoint using the created custom registry.
