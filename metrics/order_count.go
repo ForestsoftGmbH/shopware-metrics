@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"github.com/prometheus/client_golang/prometheus"
 	"log"
+	"shopware-metrics/shopware"
 )
 
 type OrderCount struct {
@@ -27,27 +28,19 @@ func (o OrderCount) GetGauge() *prometheus.GaugeVec {
 	return o.Counter
 }
 func (o OrderCount) Grab(db *sql.DB) (*prometheus.GaugeVec, error) {
-	var salesChannel string
-	var channelId string
 	var orderCountMetrics = o.Counter
-	res, err := db.Query("SELECT sales_channel.id, sales_channel_translation.name FROM sales_channel INNER JOIN sales_channel_translation ON sales_channel.id = sales_channel_translation.sales_channel_id")
-	defer res.Close()
+	salesChannels := shopware.GetSalesChannels(db)
 	var orderCount int
 
-	for res.Next() {
-		err := res.Scan(&channelId, &salesChannel)
-		if err != nil {
-			log.Fatal(err)
-		}
+	for _, salesChannel := range salesChannels {
 		sql := "SELECT COUNT(*) FROM `order` WHERE sales_channel_id = ?"
-		err2 := db.QueryRow(sql, channelId).Scan(&orderCount)
+		err2 := db.QueryRow(sql, salesChannel.Id).Scan(&orderCount)
 		if err2 != nil {
 			log.Println("Error", err2, sql)
-			log.Println("Sales Channel:", channelId)
-			log.Println("Sales Channel Name:", salesChannel)
+			log.Println("Sales Channel Name:", salesChannel.Name)
 		} else {
-			orderCountMetrics.WithLabelValues(salesChannel).Set(float64(orderCount))
+			orderCountMetrics.WithLabelValues(salesChannel.Name).Set(float64(orderCount))
 		}
 	}
-	return orderCountMetrics, err
+	return orderCountMetrics, nil
 }
