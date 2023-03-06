@@ -57,6 +57,7 @@ func main() {
 		metrics.NewOrderRevenue(),
 		metrics.NewNewsletterCounter(),
 		metrics.NewWelcomeCounter(),
+		metrics.NewCartCounter(),
 	}
 	//iterate metrics and register in registry
 	for _, metric := range metrics {

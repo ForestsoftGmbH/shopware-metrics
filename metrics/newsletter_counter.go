@@ -35,14 +35,22 @@ func (o NewsletterSubscriberGauge) Grab(db *sql.DB) (*prometheus.GaugeVec, error
 	for _, salesChannel := range salesChannels {
 
 		sql := "SELECT COUNT(*), `status` FROM `newsletter_recipient` WHERE sales_channel_id = ? GROUP BY `status`"
-		err2 := db.QueryRow(sql, salesChannel.Id).Scan(&orderCount, &status)
+		res, err2 := db.Query(sql, salesChannel.Id)
+		defer res.Close()
 		if err2 != nil && "sql: no rows in result set" != err2.Error() {
 			if err2 != nil {
 				log.Println("Error", err2, sql)
 				log.Println("Sales Channel Name:", salesChannel)
 			}
 		} else {
-			orderCountMetrics.WithLabelValues(salesChannel.Name, status).Set(float64(orderCount))
+			for res.Next() {
+				err := res.Scan(&orderCount, &status)
+				if err != nil {
+					log.Println("Error fetching Newsletter: ", err)
+				} else {
+					orderCountMetrics.WithLabelValues(salesChannel.Name, status).Set(float64(orderCount))
+				}
+			}
 		}
 	}
 	return orderCountMetrics, nil
