@@ -50,7 +50,7 @@ func (o OrderCount) grabDatabase(db *sql.DB, salesChannel shopware.SalesChannel,
 		interval = ""
 	}
 
-	sql := "SELECT COUNT(*) FROM `order` WHERE sales_channel_id = ? " + interval
+	sql := "SELECT COUNT(*) FROM `order` WHERE sales_channel_id = ? AND state_id NOT IN (x'980b49bf0e7e4245b7633aac9dd01d33') " + interval
 	err2 := db.QueryRow(sql, salesChannel.Id).Scan(&orderCount)
 	if err2 != nil {
 		log.Println("Error", err2, sql)

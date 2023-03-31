@@ -51,7 +51,7 @@ func (o RevenueGauge) grabDatabase(db *sql.DB, salesChannel shopware.SalesChanne
 	case "total":
 		interval = ""
 	}
-	sql := "SELECT IFNULL(SUM(amount_net),0) FROM `order` WHERE sales_channel_id = ? " + interval
+	sql := "SELECT IFNULL(SUM(amount_net - shipping_total),0) FROM `order` WHERE sales_channel_id = ? AND state_id NOT IN (x'980b49bf0e7e4245b7633aac9dd01d33') " + interval
 	err2 := db.QueryRow(sql, salesChannel.Id).Scan(&orderCount)
 	if err2 != nil {
 		log.Println("Error", err2, sql)
